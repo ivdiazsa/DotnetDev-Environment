@@ -187,25 +187,33 @@ internal static class BuildUtils
         //       Still, it would be nice to only add it when necessary, perhaps
         //       by looking at the received subset values.
 
-        if (!argsDict.TryGetValue("arch", out string _))
+        if (!argsDict.ContainsKey("arch"))
         {
             argsDict.Add("arch", Environment.GetEnvironmentVariable("DOTNET_DEV_ARCH"));
         }
 
-        if (!argsDict.TryGetValue("os", out string _))
+        if (!argsDict.ContainsKey("os"))
         {
             argsDict.Add("os", Environment.GetEnvironmentVariable("DOTNET_DEV_OS"));
         }
 
-        if (isTestBuild && !argsDict.TryGetValue("clr", out string _))
+        if (isTestBuild && !argsDict.ContainsKey("clr"))
         {
             argsDict.Add("clr", Environment.GetEnvironmentVariable("DOTNET_DEV_CONFIG"));
         }
 
-        if (!isTestBuild && !argsDict.TryGetValue("configuration", out string _))
+        if (!isTestBuild && !argsDict.ContainsKey("configuration"))
         {
-            argsDict.Add("configuration",
-                         Environment.GetEnvironmentVariable("DOTNET_DEV_CONFIG"));
+            // The new way the tests work by using a live Crossgen2 and a host
+            // broke the normal scenario. The workaround is to also add the
+            // '-configuration' flag with the same value as '-runtimeConfiguration'
+            // to avoid missing components when attempting to build the tests.
+
+            string configVal = argsDict.ContainsKey("runtimeConfiguration")
+                               ? argsDict["runtimeConfiguration"]
+                               : Environment.GetEnvironmentVariable("DOTNET_DEV_CONFIG");
+
+            argsDict.Add("configuration", configVal);
         }
     }
 
